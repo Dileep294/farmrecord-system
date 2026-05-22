@@ -6,6 +6,7 @@ use App\Models\Livestock;
 use App\Models\Owner;
 use App\Models\Trade;
 use App\Models\Vaccination;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class LivestockController extends Controller
@@ -22,7 +23,11 @@ class LivestockController extends Controller
             ? Owner::all()
             : Owner::where('user_id', (string) auth()->id())->get();
 
-        return view('livestock.create', compact('owners'));
+        $farmers = auth()->user()->isAdmin()
+            ? User::where('role', 'farmer')->get()
+            : collect();
+
+        return view('livestock.create', compact('owners', 'farmers'));
     }
 
     public function store(Request $request)
@@ -35,7 +40,6 @@ class LivestockController extends Controller
             'owner_id'   => 'required',
         ]);
 
-        // Check tag uniqueness manually
         $exists = Livestock::where('tag_number', $request->tag_number)->first();
         if ($exists) {
             return back()->withErrors(['tag_number' => 'Tag number already exists.'])->withInput();
@@ -46,8 +50,13 @@ class LivestockController extends Controller
             $photo = $request->file('photo')->store('livestock', 'public');
         }
 
+        // Admin can assign to farmer, otherwise use own user_id
+        $userId = auth()->user()->isAdmin() && $request->filled('farmer_id')
+            ? (string) $request->farmer_id
+            : (string) auth()->id();
+
         Livestock::create([
-            'user_id'    => (string) auth()->id(),
+            'user_id'    => $userId,
             'owner_id'   => (string) $request->owner_id,
             'tag_number' => $request->tag_number,
             'species'    => $request->species,
