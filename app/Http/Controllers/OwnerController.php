@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Owner;
 use App\Models\Livestock;
 use Illuminate\Http\Request;
+use MongoDB\BSON\ObjectId;
 
 class OwnerController extends Controller
 {
@@ -28,7 +29,7 @@ class OwnerController extends Controller
         ]);
 
         Owner::create([
-            'user_id' => auth()->id(),
+            'user_id' => (string) auth()->id(),
             'name'    => $request->name,
             'nic'     => $request->nic,
             'phone'   => $request->phone,
@@ -42,8 +43,14 @@ class OwnerController extends Controller
 
     public function show($id)
     {
-        $owner     = Owner::findOrFail($id);
-        $livestock = Livestock::where('owner_id', $id)->get();
+        $owner = Owner::findOrFail($id);
+
+        // Try both string and ObjectId comparison to handle old + new records
+        $livestock = Livestock::where(function($query) use ($id, $owner) {
+            $query->where('owner_id', (string) $owner->id)
+                  ->orWhere('owner_id', $id);
+        })->get();
+
         return view('owners.show', compact('owner', 'livestock'));
     }
 
@@ -56,7 +63,7 @@ class OwnerController extends Controller
     public function update(Request $request, $id)
     {
         $owner = Owner::findOrFail($id);
-        $owner->update($request->only(['name','nic','phone','email','address']));
+        $owner->update($request->only(['name', 'nic', 'phone', 'email', 'address']));
         return redirect()->route('owners.index')
             ->with('success', 'Owner updated.');
     }

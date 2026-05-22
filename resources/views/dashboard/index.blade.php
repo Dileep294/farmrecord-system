@@ -41,7 +41,8 @@
         <div class="p-4">
             @forelse($overdueVaccines->take(5) as $v)
             <div class="flex items-center justify-between py-2 text-sm border-b border-gray-50">
-                <span class="text-gray-700">{{ $v->vaccine_name }}</span>
+               <span class="font-medium text-gray-700">{{ $v->vaccine_name }}</span>
+               <span class="ml-2 text-xs text-gray-400">— {{ $v->animal_tag }}</span>
                 <span class="font-medium text-red-600">
                     {{ \Carbon\Carbon::parse($v->next_due_date)->format('d M Y') }}
                 </span>
@@ -91,9 +92,9 @@
             <tbody class="divide-y divide-gray-50">
                 @forelse($recentTrades as $t)
                 <tr class="hover:bg-gray-50">
-                    <td class="px-4 py-3">{{ $t->livestock_id }}</td>
-                    <td class="px-4 py-3">{{ $t->from_owner_id }}</td>
-                    <td class="px-4 py-3">{{ $t->to_owner_id }}</td>
+                    <td class="px-4 py-3 font-medium text-green-700">{{ $t->animal_tag }}</td>
+                    <td class="px-4 py-3 text-gray-600">{{ $t->from_owner_name }}</td>
+                    <td class="px-4 py-3 text-gray-600">{{ $t->to_owner_name }}</td>
                     <td class="px-4 py-3">{{ \Carbon\Carbon::parse($t->transfer_date)->format('d M Y') }}</td>
                     <td class="px-4 py-3 font-medium">Rs. {{ number_format($t->price, 2) }}</td>
                 </tr>

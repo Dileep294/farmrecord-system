@@ -20,7 +20,7 @@ class LivestockController extends Controller
     {
         $owners = auth()->user()->canSeeAllData()
             ? Owner::all()
-            : Owner::where('user_id', auth()->id())->get();
+            : Owner::where('user_id', (string) auth()->id())->get();
 
         return view('livestock.create', compact('owners'));
     }
@@ -28,12 +28,18 @@ class LivestockController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'tag_number' => 'required|unique:mongodb.livestock',
+            'tag_number' => 'required',
             'species'    => 'required',
             'breed'      => 'required',
             'age'        => 'required|integer|min:0',
             'owner_id'   => 'required',
         ]);
+
+        // Check tag uniqueness manually
+        $exists = Livestock::where('tag_number', $request->tag_number)->first();
+        if ($exists) {
+            return back()->withErrors(['tag_number' => 'Tag number already exists.'])->withInput();
+        }
 
         $photo = null;
         if ($request->hasFile('photo')) {
@@ -41,12 +47,12 @@ class LivestockController extends Controller
         }
 
         Livestock::create([
-            'user_id'    => auth()->id(),
-            'owner_id'   => $request->owner_id,
+            'user_id'    => (string) auth()->id(),
+            'owner_id'   => (string) $request->owner_id,
             'tag_number' => $request->tag_number,
             'species'    => $request->species,
             'breed'      => $request->breed,
-            'age'        => $request->age,
+            'age'        => (int) $request->age,
             'colour'     => $request->colour,
             'status'     => 'active',
             'photo'      => $photo,
@@ -59,8 +65,8 @@ class LivestockController extends Controller
     public function show($id)
     {
         $animal       = $this->findOwned($id);
-        $vaccinations = Vaccination::where('livestock_id', $id)->latest()->get();
-        $history      = Trade::where('livestock_id', $id)->latest()->get();
+        $vaccinations = Vaccination::where('livestock_id', (string) $animal->id)->latest()->get();
+        $history      = Trade::where('livestock_id', (string) $animal->id)->latest()->get();
         $owners       = Owner::all();
         return view('livestock.show', compact('animal', 'vaccinations', 'history', 'owners'));
     }
@@ -70,7 +76,7 @@ class LivestockController extends Controller
         $animal = $this->findOwned($id);
         $owners = auth()->user()->canSeeAllData()
             ? Owner::all()
-            : Owner::where('user_id', auth()->id())->get();
+            : Owner::where('user_id', (string) auth()->id())->get();
 
         return view('livestock.edit', compact('animal', 'owners'));
     }
@@ -89,7 +95,7 @@ class LivestockController extends Controller
             'tag_number' => $request->tag_number,
             'species'    => $request->species,
             'breed'      => $request->breed,
-            'age'        => $request->age,
+            'age'        => (int) $request->age,
             'colour'     => $request->colour,
             'status'     => $request->status,
         ]);
@@ -116,17 +122,17 @@ class LivestockController extends Controller
         $animal = Livestock::findOrFail($id);
 
         Trade::create([
-            'user_id'       => auth()->id(),
-            'livestock_id'  => $id,
-            'from_owner_id' => $animal->owner_id,
-            'to_owner_id'   => $request->new_owner_id,
+            'user_id'       => (string) auth()->id(),
+            'livestock_id'  => (string) $animal->id,
+            'from_owner_id' => (string) $animal->owner_id,
+            'to_owner_id'   => (string) $request->new_owner_id,
             'transfer_date' => now(),
-            'price'         => $request->price ?? 0,
+            'price'         => (float) ($request->price ?? 0),
             'notes'         => $request->notes,
         ]);
 
         $animal->update([
-            'owner_id' => $request->new_owner_id,
+            'owner_id' => (string) $request->new_owner_id,
             'status'   => 'transferred',
         ]);
 
@@ -138,7 +144,7 @@ class LivestockController extends Controller
     {
         $animal = Livestock::findOrFail($id);
 
-        if (auth()->user()->isFarmer() && $animal->user_id !== auth()->id()) {
+        if (auth()->user()->isFarmer() && $animal->user_id !== (string) auth()->id()) {
             abort(403, 'You do not have access to this record.');
         }
 
