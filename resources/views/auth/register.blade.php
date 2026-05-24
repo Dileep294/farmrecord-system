@@ -58,27 +58,56 @@
                 <input type="password" name="password_confirmation"
                        class="w-full px-4 py-3 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                        placeholder="Repeat password" required>
-            </div>
+        </div>
 
             <div class="mb-6">
-                <label class="block mb-1 text-sm font-medium text-gray-700">Role *</label>
-                <select name="role"
-                        class="w-full px-4 py-3 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                        required>
-                    <option value="farmer" {{ old('role') == 'farmer' ? 'selected' : '' }}>
-                        🌾 Farmer
-                    </option>
-                    <option value="authority" {{ old('role') == 'authority' ? 'selected' : '' }}>
-                        🏛️ Authority
-                    </option>
-                    <option value="admin" {{ old('role') == 'admin' ? 'selected' : '' }}>
-                        ⚙️ Admin
-                    </option>
-                </select>
-                <p class="mt-1 text-xs text-gray-400">
-                    Farmer = own data only · Authority = all data · Admin = full access
-                </p>
-            </div>
+            <label class="block mb-1 text-sm font-medium text-gray-700">Role *</label>
+            <select name="role"
+                    class="w-full px-4 py-3 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    required>
+
+                <option value="farmer" {{ old('role') == 'farmer' ? 'selected' : '' }}>
+                    🌾 Farmer
+                </option>
+
+                @php
+                    $adminExists     = \App\Models\User::where('role', 'admin')->exists();
+                    $authorityExists = \App\Models\User::where('role', 'authority')->exists();
+                @endphp
+
+                @if(!$authorityExists)
+                <option value="authority" {{ old('role') == 'authority' ? 'selected' : '' }}>
+                    🏛️ Authority
+                </option>
+                @endif
+
+                @if(!$adminExists)
+                <option value="admin" {{ old('role') == 'admin' ? 'selected' : '' }}>
+                    ⚙️ Admin
+                </option>
+                @endif
+
+            </select>
+
+            <p class="mt-1 text-xs text-gray-400">
+                Farmer = own data only · Authority = all data · Admin = full access
+            </p>
+
+            @if($adminExists && $authorityExists)
+            <p class="px-2 py-1 mt-1 text-xs text-yellow-600 border border-yellow-200 rounded bg-yellow-50">
+                ⚠️ Admin and Authority accounts are already registered. Only Farmer registration is available.
+            </p>
+            @elseif($adminExists)
+            <p class="px-2 py-1 mt-1 text-xs text-yellow-600 border border-yellow-200 rounded bg-yellow-50">
+                ⚠️ Admin account already exists.
+            </p>
+            @elseif($authorityExists)
+            <p class="px-2 py-1 mt-1 text-xs text-yellow-600 border border-yellow-200 rounded bg-yellow-50">
+                ⚠️ Authority account already exists.
+            </p>
+            @endif
+
+        </div>
 
             <button type="submit"
                     class="w-full py-3 text-sm font-semibold text-white transition bg-green-600 rounded-lg hover:bg-green-700">

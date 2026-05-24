@@ -37,6 +37,26 @@ class RegisteredUserController extends Controller
         'role'     => ['required', 'in:admin,farmer,authority'],
     ]);
 
+    // Check if admin already exists
+    if ($request->role === 'admin') {
+        $adminExists = User::where('role', 'admin')->first();
+        if ($adminExists) {
+            return back()
+                ->withInput()
+                ->withErrors(['role' => 'An Admin account already exists. Only one Admin is allowed.']);
+        }
+    }
+
+    // Check if authority already exists
+    if ($request->role === 'authority') {
+        $authorityExists = User::where('role', 'authority')->first();
+        if ($authorityExists) {
+            return back()
+                ->withInput()
+                ->withErrors(['role' => 'An Authority account already exists. Only one Authority is allowed.']);
+        }
+    }
+
     $user = User::create([
         'name'     => $request->name,
         'email'    => $request->email,
