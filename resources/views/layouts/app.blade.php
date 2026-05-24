@@ -37,7 +37,7 @@
             📊 Dashboard
         </a>
 
-        @if(auth()->user()->canSeeAllData())
+        @if(auth()->user()->canSeeAllData() || auth()->user()->isFarmer())
         <a href="{{ route('owners.index') }}"
            class="flex items-center gap-2 px-3 py-2 rounded-lg text-gray-700 hover:bg-green-50 hover:text-green-700 font-medium {{ request()->routeIs('owners.*') ? 'bg-green-100 text-green-700' : '' }}">
             👤 Owners

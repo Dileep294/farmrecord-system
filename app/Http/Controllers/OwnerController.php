@@ -5,13 +5,19 @@ namespace App\Http\Controllers;
 use App\Models\Owner;
 use App\Models\Livestock;
 use Illuminate\Http\Request;
-use MongoDB\BSON\ObjectId;
 
 class OwnerController extends Controller
 {
     public function index()
     {
-        $owners = Owner::latest()->paginate(10);
+        // Farmer sees only their own owners
+        // Admin/Authority sees all
+        if (auth()->user()->isFarmer()) {
+            $owners = Owner::where('user_id', (string) auth()->id())->paginate(10);
+        } else {
+            $owners = Owner::latest()->paginate(10);
+        }
+
         return view('owners.index', compact('owners'));
     }
 
@@ -45,7 +51,11 @@ class OwnerController extends Controller
     {
         $owner = Owner::findOrFail($id);
 
-        // Try both string and ObjectId comparison to handle old + new records
+        // Farmer can only view their own owners
+        if (auth()->user()->isFarmer() && $owner->user_id !== (string) auth()->id()) {
+            abort(403);
+        }
+
         $livestock = Livestock::where(function($query) use ($id, $owner) {
             $query->where('owner_id', (string) $owner->id)
                   ->orWhere('owner_id', $id);
@@ -57,12 +67,22 @@ class OwnerController extends Controller
     public function edit($id)
     {
         $owner = Owner::findOrFail($id);
+
+        if (auth()->user()->isFarmer() && $owner->user_id !== (string) auth()->id()) {
+            abort(403);
+        }
+
         return view('owners.edit', compact('owner'));
     }
 
     public function update(Request $request, $id)
     {
         $owner = Owner::findOrFail($id);
+
+        if (auth()->user()->isFarmer() && $owner->user_id !== (string) auth()->id()) {
+            abort(403);
+        }
+
         $owner->update($request->only(['name', 'nic', 'phone', 'email', 'address']));
         return redirect()->route('owners.index')
             ->with('success', 'Owner updated.');
@@ -70,7 +90,13 @@ class OwnerController extends Controller
 
     public function destroy($id)
     {
-        Owner::findOrFail($id)->delete();
+        $owner = Owner::findOrFail($id);
+
+        if (auth()->user()->isFarmer() && $owner->user_id !== (string) auth()->id()) {
+            abort(403);
+        }
+
+        $owner->delete();
         return redirect()->route('owners.index')
             ->with('success', 'Owner deleted.');
     }

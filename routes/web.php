@@ -18,7 +18,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Owners — admin and authority only
-    Route::middleware(['role:admin,authority'])->group(function () {
+    // Owners — admin, authority AND farmer can manage their own
+    Route::middleware(['role:admin,authority,farmer'])->group(function () {
         Route::resource('owners', OwnerController::class);
     });
 

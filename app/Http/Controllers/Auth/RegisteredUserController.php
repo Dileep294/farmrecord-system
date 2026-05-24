@@ -29,7 +29,7 @@ class RegisteredUserController extends Controller
      * @throws ValidationException
      */
    public function store(Request $request): RedirectResponse
-    {
+   {
     $request->validate([
         'name'     => ['required', 'string', 'max:255'],
         'email'    => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
@@ -43,6 +43,18 @@ class RegisteredUserController extends Controller
         'password' => Hash::make($request->password),
         'role'     => $request->role,
     ]);
+
+    // Auto-create owner profile when farmer registers
+    if ($request->role === 'farmer') {
+        \App\Models\Owner::create([
+            'user_id' => (string) $user->id,
+            'name'    => $request->name,
+            'email'   => $request->email,
+            'nic'     => 'N/A',
+            'phone'   => 'N/A',
+            'address' => '',
+        ]);
+    }
 
     event(new Registered($user));
     Auth::login($user);
